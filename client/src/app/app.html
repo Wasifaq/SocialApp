@@ -1,3 +1,8 @@
 <app-nav />
 
-<app-home />
+<div [class.mt-24]="router.url !== '/'" 
+     [class.container]="router.url !== '/'" 
+     [class.mx-auto]="router.url !== '/'"> <!--  [class.container]="router.url !== '/'" this adds conditional styling class -->
+
+    <router-outlet />
+</div>
