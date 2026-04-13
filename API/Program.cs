@@ -18,6 +18,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 });
 builder.Services.AddCors();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IMemberRepository, MemberRepository>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
    .AddJwtBearer(options =>
       {
@@ -47,5 +48,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Following code creates database with all migrations if DB is not already created or found. And then seeds the data - Start
+// Because we cannot use injection pattern in Program.cs that's why we are using Service Locator pattern here, for AppDbContext and ILogger
+using var scope = app.Services.CreateScope();
+var services = scope.ServiceProvider;
+try
+{
+   var context = services.GetRequiredService<AppDbContext>();
+   await context.Database.MigrateAsync(); // This creates DB with all migrations if DB is not already created or not found
+   await Seed.SeedUsers(context);
+}
+catch (Exception ex)
+{
+   var logger = services.GetRequiredService<ILogger<Program>>();
+   logger.LogError(ex, "An error occured during migration in Program.cs");
+}
+
+// Above code creates database with all migrations if DB is not already created or found. And then seeds the data - End
 
 app.Run();
