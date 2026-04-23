@@ -16,6 +16,7 @@ public class MemberRepository(AppDbContext context) : IMemberRepository
     {
         return await context.Members
                         .Include(u => u.User)
+                        .Include(p => p.Photos)
                         .SingleOrDefaultAsync(m => m.Id == id);
     }
 
