@@ -2,14 +2,12 @@ import { Component, inject, input, OnInit, output, signal } from '@angular/core'
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { RegisterCreds, User } from '../../../types/user';
 import { AccountService } from '../../../core/services/account-service';
-import { JsonPipe } from '@angular/common';
-import { ValidationError } from '@angular/forms/signals';
 import { TextInput } from "../../../shared/text-input/text-input";
 import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, JsonPipe, TextInput],
+  imports: [ReactiveFormsModule, TextInput],
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
