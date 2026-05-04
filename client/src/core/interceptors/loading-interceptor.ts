@@ -28,6 +28,15 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
     invalidateCache('/likes')
   }
 
+  if(req.method.includes('POST') && req.url.includes('/messages')) {
+    invalidateCache('/messages')
+  }
+
+  //console.log(req.method + ' :: ' + req.url);
+  if(req.method.includes('DELETE') && req.url.includes('/messages')) {
+    invalidateCache('/messages')
+  }
+
   if (req.method === 'GET') {
     const cachedResponse = cache.get(cacheKey);
     if (cachedResponse) {
