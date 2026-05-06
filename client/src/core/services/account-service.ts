@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, JsonpClientBackend } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { LoginCreds, RegisterCreds, User } from '../../types/user';
 import { tap } from 'rxjs';
@@ -15,35 +15,62 @@ export class AccountService {
   private baseUrl = environment.apiUrl;
 
   register(creds: RegisterCreds) {
-    return this.http.post<User>(this.baseUrl + 'account/register', creds).pipe( // pipe uses RxJS
+    return this.http.post<User>(this.baseUrl + 'account/register', creds, {withCredentials: true}).pipe( // pipe uses RxJS
       tap(user => {
         if (user) {
-          this.setCurrentUser(user)
+          this.setCurrentUser(user);
+          this.startTokenRefreshInterval();
         }
       })
     )
   }
 
   login(creds: LoginCreds) {
-    return this.http.post<User>(this.baseUrl + 'account/login', creds).pipe( // pipe uses RxJS
+    return this.http.post<User>(this.baseUrl + 'account/login', creds, {withCredentials: true}).pipe(
       tap(user => {
         if (user) {
-          this.setCurrentUser(user)
+          this.setCurrentUser(user);
+          this.startTokenRefreshInterval();
         }
       })
     )
   }
 
+  refreshToken() {
+    return this.http.post<User>(this.baseUrl + 'account/refresh-token', {}, {withCredentials: true});
+  }
+
+  startTokenRefreshInterval() {
+    setInterval(() => {
+      this.http.post<User>(this.baseUrl + 'account/refresh-token', {}, {withCredentials: true}).subscribe({
+        next: user => {
+          this.setCurrentUser(user)
+        },
+        error: () => {
+          this.logout()
+        }
+      })
+    }, 5 * 60 * 1000); // Every 5 minutes
+  }
+
   setCurrentUser(user: User) {
-    localStorage.setItem('user', JSON.stringify(user)); // localStorage uses browser storage for persistance of data acroos page refresh and system reboots as well
+    user.roles = this.getRolesFromToken(user);
+    //localStorage.setItem('user', JSON.stringify(user)); // localStorage uses browser storage for persistance of data acroos page refresh and system reboots as well
     this.currentUser.set(user);
     this.likesService.getLikesIds();
   }
 
   logout() {
-    localStorage.removeItem('user');
+    //localStorage.removeItem('user');
     localStorage.removeItem('filters');
     this.currentUser.set(null);
     this.likesService.clearLikeIds();
+  }
+
+  private getRolesFromToken(user: User): string[] {
+    const payload = user.token.split('.')[1];
+    const decoded = atob(payload);
+    const jsonPayload = JSON.parse(decoded);
+    return Array.isArray(jsonPayload.role) ? jsonPayload.role : [jsonPayload.role]
   }
 }

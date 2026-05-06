@@ -1,10 +1,13 @@
 using System.Text;
+using API.Constants;
 using API.Data;
+using API.Entities;
 using API.Helpers;
 using API.Interfaces;
 using API.Middleware;
 using API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -25,6 +28,14 @@ builder.Services.AddScoped<ILikesRepository, LikesRepository>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<LogUserActivity>();
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection(("CloudinarySettings")));
+
+builder.Services.AddIdentityCore<AppUser>(opt =>
+{
+   opt.Password.RequireNonAlphanumeric = false;
+   opt.User.RequireUniqueEmail = true;
+}).AddRoles<IdentityRole>()
+.AddEntityFrameworkStores<AppDbContext>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
    .AddJwtBearer(options =>
       {
@@ -39,6 +50,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
          };
       });
 
+builder.Services.AddAuthorizationBuilder()
+   .AddPolicy(UserPolicyNames.RequireAdminRole, policy => policy.RequireRole("Admin"))
+   .AddPolicy(UserPolicyNames.ModeratePhotoRole, policy => policy.RequireRole("Admin", "Moderator"));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -46,7 +61,11 @@ var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseCors(options => options.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200", "https://localhost:4200"));
+app.UseCors(options => 
+   options.AllowAnyHeader()
+   .AllowAnyMethod()
+   .AllowCredentials() //This line was added after adding RegreshToken. This allows to send and receive cookies from API server
+   .WithOrigins("http://localhost:4200", "https://localhost:4200"));
 
 //app.UseHttpsRedirection();
 
@@ -62,8 +81,9 @@ var services = scope.ServiceProvider;
 try
 {
    var context = services.GetRequiredService<AppDbContext>();
+   var userManager = services.GetRequiredService<UserManager<AppUser>>();
    await context.Database.MigrateAsync(); // This creates DB with all migrations if DB is not already created or not found
-   await Seed.SeedUsers(context);
+   await Seed.SeedUsers(userManager);
 }
 catch (Exception ex)
 {
