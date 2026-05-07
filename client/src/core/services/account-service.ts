@@ -4,6 +4,8 @@ import { LoginCreds, RegisterCreds, User } from '../../types/user';
 import { tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { LikesService } from './likes-service';
+import { PresenceService } from './presence-service';
+import { HubConnectionState } from '@microsoft/signalr';
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +13,7 @@ import { LikesService } from './likes-service';
 export class AccountService {
   private http = inject(HttpClient);
   private likesService = inject(LikesService);
+  private presenceService = inject(PresenceService);
   currentUser = signal<User | null>(null); // <User | null> this is called union, we can have multiple types like this
   private baseUrl = environment.apiUrl;
 
@@ -58,6 +61,11 @@ export class AccountService {
     //localStorage.setItem('user', JSON.stringify(user)); // localStorage uses browser storage for persistance of data acroos page refresh and system reboots as well
     this.currentUser.set(user);
     this.likesService.getLikesIds();
+
+    if(this.presenceService.hubConnection?.state !== HubConnectionState.Connected)
+    {
+      this.presenceService.createHubConnection(user);
+    }
   }
 
   logout() {
@@ -65,6 +73,7 @@ export class AccountService {
     localStorage.removeItem('filters');
     this.currentUser.set(null);
     this.likesService.clearLikeIds();
+    this.presenceService.stopHubConnection();
   }
 
   private getRolesFromToken(user: User): string[] {
