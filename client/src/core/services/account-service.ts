@@ -18,7 +18,7 @@ export class AccountService {
   private baseUrl = environment.apiUrl;
 
   register(creds: RegisterCreds) {
-    return this.http.post<User>(this.baseUrl + 'account/register', creds, {withCredentials: true}).pipe( // pipe uses RxJS
+    return this.http.post<User>(this.baseUrl + 'account/register', creds, { withCredentials: true }).pipe( // pipe uses RxJS
       tap(user => {
         if (user) {
           this.setCurrentUser(user);
@@ -29,7 +29,7 @@ export class AccountService {
   }
 
   login(creds: LoginCreds) {
-    return this.http.post<User>(this.baseUrl + 'account/login', creds, {withCredentials: true}).pipe(
+    return this.http.post<User>(this.baseUrl + 'account/login', creds, { withCredentials: true }).pipe(
       tap(user => {
         if (user) {
           this.setCurrentUser(user);
@@ -40,12 +40,12 @@ export class AccountService {
   }
 
   refreshToken() {
-    return this.http.post<User>(this.baseUrl + 'account/refresh-token', {}, {withCredentials: true});
+    return this.http.post<User>(this.baseUrl + 'account/refresh-token', {}, { withCredentials: true });
   }
 
   startTokenRefreshInterval() {
     setInterval(() => {
-      this.http.post<User>(this.baseUrl + 'account/refresh-token', {}, {withCredentials: true}).subscribe({
+      this.http.post<User>(this.baseUrl + 'account/refresh-token', {}, { withCredentials: true }).subscribe({
         next: user => {
           this.setCurrentUser(user)
         },
@@ -62,18 +62,21 @@ export class AccountService {
     this.currentUser.set(user);
     this.likesService.getLikesIds();
 
-    if(this.presenceService.hubConnection?.state !== HubConnectionState.Connected)
-    {
+    if (this.presenceService.hubConnection?.state !== HubConnectionState.Connected) {
       this.presenceService.createHubConnection(user);
     }
   }
 
   logout() {
-    //localStorage.removeItem('user');
-    localStorage.removeItem('filters');
-    this.currentUser.set(null);
-    this.likesService.clearLikeIds();
-    this.presenceService.stopHubConnection();
+    this.http.post(this.baseUrl + 'account/logout', {}, { withCredentials: true }).subscribe({
+      next: () => {
+        //localStorage.removeItem('user');
+        localStorage.removeItem('filters');
+        this.currentUser.set(null);
+        this.likesService.clearLikeIds();
+        this.presenceService.stopHubConnection();
+      }
+    })
   }
 
   private getRolesFromToken(user: User): string[] {
