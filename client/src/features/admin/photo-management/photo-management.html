@@ -1,1 +1,18 @@
-<p>photo-management works!</p>
+<div class='grid grid-cols-6 gap-4'>
+    @for (photo of photos(); track photo.id) {
+        <div class="relative">
+            <img src="{{photo.url}}" class="img-thumbnail p-1" alt="photo of {{photo.memberId}}">
+            <div class="absolute bottom-14 left-1 badge badge-lg badge-ghost bg-gray-200 items-center">
+                {{photo.memberDisplayName}}
+            </div>
+            <!-- <div class="flex w-full gap-3 text-white bg-gray-400 rounded">
+                <span class="py-2 ml-1">Added by: {{photo.memberDisplayName}}</span>
+            </div> -->
+
+            <div class='flex w-full gap-3 mt-3'>
+                <button class='btn btn-success grow' (click)='approvePhoto(photo.id)'>Approve</button>
+                <button class='btn btn-error grow' (click)='rejectPhoto(photo.id)'>Reject</button>
+            </div>
+        </div>
+    }
+</div>

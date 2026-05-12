@@ -25,13 +25,6 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<AppUser>
     {
         base.OnModelCreating(modelBuilder);
 
-        // modelBuilder.Entity<IdentityRole>()
-        //     .HasData(
-        //         new IdentityRole { Id = "member-id", Name = "Member", NormalizedName = "MEMBER" },
-        //         new IdentityRole { Id = "moderator-id", Name = "Moderator", NormalizedName = "MODERATOR" },
-        //         new IdentityRole { Id = "admin-id", Name = "Admin", NormalizedName = "ADMIN" }
-        //     );
-
         modelBuilder.Entity<IdentityRole>()
         .HasData(
             new IdentityRole
@@ -81,6 +74,9 @@ public class AppDbContext(DbContextOptions options) : IdentityDbContext<AppUser>
             .WithMany(t => t.LikedByMembers)
             .HasForeignKey(s => s.TargetMemberId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Photo>()
+            .HasQueryFilter(p => p.IsApproved);
 
         var dateTimeConverter = new ValueConverter<DateTime, DateTime>(
             v => v.ToUniversalTime(),

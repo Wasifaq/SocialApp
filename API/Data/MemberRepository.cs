@@ -18,16 +18,18 @@ public class MemberRepository(AppDbContext context) : IMemberRepository
         return await context.Members
                         .Include(u => u.User)
                         .Include(p => p.Photos)
+                        .IgnoreQueryFilters()
                         .SingleOrDefaultAsync(m => m.Id == id);
     }
 
     public async Task<PaginatedResult<Member>> GetMembersAsync(MemberParams memberParams)
     {
         var query = context.Members.AsQueryable();
+        query.IgnoreQueryFilters();
 
         query = query.Where(x => x.Id != memberParams.CurrentMemberId);
 
-        if(memberParams.Gender != null)
+        if (memberParams.Gender != null)
         {
             query = query.Where(g => g.Gender.ToLower() == memberParams.Gender.ToLower());
         }
@@ -46,9 +48,17 @@ public class MemberRepository(AppDbContext context) : IMemberRepository
         return await PaginationHelper.CreateAsync(query, memberParams.PageNumber, memberParams.PageSize);
     }
 
-    public async Task<IReadOnlyList<Photo>> GetPhotosForMemberAsync(string memberId)
+    public async Task<IReadOnlyList<Photo>> GetPhotosForMemberAsync(string memberId, bool isCurrentUser)
     {
+        var query = context.Members
+            .Where(x => x.Id == memberId)
+            .SelectMany(x => x.Photos);
+
+        if (isCurrentUser) query = query.IgnoreQueryFilters();
+        return await query.ToListAsync();
+
         return await context.Members
+                        .IgnoreQueryFilters()
                         .Where(m => m.Id == memberId)
                         .SelectMany(p => p.Photos)
                         .ToListAsync();
